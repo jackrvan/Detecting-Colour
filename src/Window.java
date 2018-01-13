@@ -16,8 +16,8 @@ class Window extends JFrame {
     private double ratio;
     private JLabel[] colorLabel;
     private JTextField inputK;
-    private JPanel center;
     private JPanel afterPanel;
+    private Color[] colors;
 
     private BufferedImage original; //Original picture after k means
 
@@ -44,18 +44,18 @@ class Window extends JFrame {
         Image newimg = image.getScaledInstance(400, (int)(400*ratio),  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
         imageIcon = new ImageIcon(newimg);  // transform it back
 
-        JLabel imgLabel = new JLabel(imageIcon);
+        JPanel imgLabel = new JPanel();
+        imgLabel.setPreferredSize(new Dimension(425,1000));
+        imgLabel.add(new JLabel(imageIcon));
         //imgLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         add(imgLabel, BorderLayout.WEST);
 
-
-
         centerPanelSetUp();
-
     }
 
     private void centerPanelSetUp() {
-        center = new JPanel();
+        JPanel center = new JPanel();
+        JLabel currK = new JLabel("K = " + k);
         center.setLayout(new BoxLayout(center, BoxLayout.Y_AXIS));
 
         JButton run = new JButton("Run K Means");
@@ -69,7 +69,11 @@ class Window extends JFrame {
             }
             km = new KMeans(k, bi);
             bi = km.setUp();
-            original = bi;
+            System.out.println("Setting original");
+            original = new BufferedImage(bi.getWidth(), bi.getHeight(), bi.getType());
+            Graphics g = original.getGraphics();
+            g.drawImage(bi, 0, 0, null);
+            g.dispose();
 
             afterPanelSetUp();
             add(afterPanel);
@@ -81,7 +85,7 @@ class Window extends JFrame {
 
             afterImgLabel.setIcon(imageIcon2);
 
-            Color[] colors = km.getColors();
+            colors = km.getColors();
             for(int a = 0; a < k; ++a) {
                 colorLabel[a].setBackground(colors[a]);
             }
@@ -89,8 +93,17 @@ class Window extends JFrame {
             repaint();
         });
         center.add(run);
+        //Label to set space between inputK and kMeans button
+        JLabel space = new JLabel();
+        space.setMaximumSize(new Dimension(50, 20));
+        //space.setBorder(BorderFactory.createLineBorder(Color.GREEN));
+        center.add(space);
+
+        center.add(new JLabel("New K Value: "));
 
         inputK = new JTextField();
+        inputK.setMaximumSize(new Dimension(200, 25));
+
         inputK.addActionListener((ActionEvent e) -> {
             String text = inputK.getText();
             try {
@@ -100,6 +113,7 @@ class Window extends JFrame {
                     k = 4;
                 }
                 System.out.println("Changing k to " + k);
+                currK.setText("K = " + k);
             } catch(NumberFormatException nfe) {
                 System.err.println("That is not an integer try again");
             } finally {
@@ -107,6 +121,10 @@ class Window extends JFrame {
             }
         });
         center.add(inputK);
+
+        center.add(currK);
+
+        center.setPreferredSize(new Dimension(200, 1000));
         add(center);
     }
 
@@ -134,7 +152,8 @@ class Window extends JFrame {
         if(this.isAncestorOf(afterPanel)) {
             remove(afterPanel);
         }
-        afterPanel = new JPanel(new FlowLayout());
+        afterPanel = new JPanel();
+
 
         afterImgLabel = new JLabel();
         afterImgLabel.setPreferredSize(new Dimension(400, (int) (400 * ratio)));
@@ -145,7 +164,7 @@ class Window extends JFrame {
         for(int a = 0; a < k; ++a) {
             colorLabel[a] = null;
             System.out.println("a = " + a);
-            colorLabel[a] = new JLabel();
+            colorLabel[a] = new JLabel("   ");
             colorLabel[a].setBorder(BorderFactory.createLineBorder(Color.GREEN));
             colorLabel[a].setOpaque(true);
             colorLabel[a].setPreferredSize(new Dimension(50, 50));
@@ -154,8 +173,27 @@ class Window extends JFrame {
             afterPanel.add(colorLabel[a]);
         }
 
+        JButton revert = new JButton("Revert");
+        revert.setPreferredSize(new Dimension(150, 50));
+        revert.addActionListener((ActionEvent evt) -> {
+            bi = new BufferedImage(original.getWidth(), original.getHeight(), original.getType());
+            Graphics g = bi.getGraphics();
+            g.drawImage(original, 0, 0, null);
+            g.dispose();
+            afterImgLabel.setIcon(new ImageIcon((new ImageIcon(bi))
+                                                    .getImage()
+                                                    .getScaledInstance(400, (int)(400*ratio), Image.SCALE_SMOOTH)));
+            afterImgLabel.repaint();
+
+            for(int a = 0; a < k; ++a) {
+                //Reset the k boxes
+                colorLabel[a].setBackground(colors[a]);
+            }
+        });
+        afterPanel.add(revert);
+
         afterPanel.setBorder(BorderFactory.createLineBorder(Color.ORANGE));
-        afterPanel.setPreferredSize(new Dimension(425, 400));
+        afterPanel.setPreferredSize(new Dimension(425, 1000));
         afterPanel.repaint();
         this.repaint();
     }
