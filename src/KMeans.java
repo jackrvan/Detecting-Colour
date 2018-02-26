@@ -28,6 +28,7 @@ class KMeans {
             for(int b = 0; b < h; ++b) {
                 //Store all pixel rgb values in rgbVals
                 int val = img.getRGB(a, b);
+                //System.out.println("" + a + ", " + b + " = " + val);
                 rgbVals[knt++] = val;
             }
         }

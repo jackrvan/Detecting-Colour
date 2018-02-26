@@ -10,6 +10,7 @@ class Window extends JFrame {
 
     private KMeans km;
     private int k = 4;
+    private String fileName;
     private BufferedImage bi = null;
     private int h, w;
     private JLabel afterImgLabel;
@@ -18,12 +19,15 @@ class Window extends JFrame {
     private JTextField inputK;
     private JPanel afterPanel;
     private Color[] colors;
+    private JPanel imgPanel;
+    private JLabel imgLabel;
 
     private BufferedImage original; //Original picture after k means
 
     Window() {
         super("My Window");
         setLayout(new FlowLayout(FlowLayout.CENTER, 50, 5));
+        fileName = "pic2.jpg";
 
         getLabels();
 
@@ -33,8 +37,16 @@ class Window extends JFrame {
         setVisible(true);
     }
 
-    private void getLabels() {
-        ImageIcon imageIcon = new ImageIcon("pic.jpg"); // load the image to a imageIcon
+    private void loadImage() {
+        File f = new File(fileName);
+        if(f.exists() && !f.isDirectory()) {
+            System.out.println("Reading from " + fileName);
+        } else {
+            System.err.println(fileName + " does not exist\nexiting program");
+            System.exit(1);
+        }
+
+        ImageIcon imageIcon = new ImageIcon(fileName); // load the image to a imageIcon
 
         h = imageIcon.getIconHeight();
         w = imageIcon.getIconWidth();
@@ -44,11 +56,38 @@ class Window extends JFrame {
         Image newimg = image.getScaledInstance(400, (int)(400*ratio),  java.awt.Image.SCALE_SMOOTH); // scale it the smooth way
         imageIcon = new ImageIcon(newimg);  // transform it back
 
-        JPanel imgLabel = new JPanel();
-        imgLabel.setPreferredSize(new Dimension(425,1000));
-        imgLabel.add(new JLabel(imageIcon));
-        //imgLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        add(imgLabel, BorderLayout.WEST);
+        imgLabel.setIcon(imageIcon);
+        imgLabel.repaint();
+    }
+
+    private void getLabels() {
+
+        imgPanel = new JPanel();
+        imgPanel.setPreferredSize(new Dimension(425,1000));
+        imgLabel = new JLabel();
+
+        loadImage();
+
+        imgPanel.add(imgLabel);
+
+        JFileChooser fc = new JFileChooser();
+        fc.setPreferredSize(new Dimension(600,750));
+
+        JButton load = new JButton("Load");
+        load.addActionListener((ActionEvent e) -> {
+            int returnVal = fc.showOpenDialog(this);
+            if(returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fc.getSelectedFile();
+                System.out.println("Opening " + file.getName() + " in " + fc.getCurrentDirectory());
+                fileName = (fc.getCurrentDirectory() + "/" + file.getName());
+                loadImage();
+            } else {
+                System.out.println("Open file abandoned");
+            }
+        });
+        imgPanel.add(load, BorderLayout.WEST);
+        //imgPanel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        add(imgPanel, BorderLayout.WEST);
 
         centerPanelSetUp();
     }
@@ -63,9 +102,9 @@ class Window extends JFrame {
 
         run.addActionListener((ActionEvent evt) -> {
             try {
-                bi = ImageIO.read(new File("pic.jpg"));
+                bi = ImageIO.read(new File(fileName));
             } catch(IOException e) {
-                System.err.print("Could not read pic.jpg");
+                System.err.print("Could not read " + fileName);
             }
             km = new KMeans(k, bi);
             bi = km.setUp();
@@ -136,16 +175,20 @@ class Window extends JFrame {
 
         Color cc = JColorChooser.showDialog(null, "Choose Colour", oldColour);
 
-        for(int x = 0; x < w; ++x) {
-            for(int y = 0; y < h; ++y) {
-                if(pixels[x][y] == centroid) {
-                    bi.setRGB(x, y, cc.getRGB());
+        if(cc != null) {
+            for (int x = 0; x < w; ++x) {
+                for (int y = 0; y < h; ++y) {
+                    if (pixels[x][y] == centroid) {
+                        bi.setRGB(x, y, cc.getRGB());
+                    }
                 }
             }
+            afterImgLabel.setIcon(new ImageIcon((new ImageIcon(bi)).getImage().getScaledInstance(400, (int)(400*ratio), Image.SCALE_SMOOTH)));
+            colorLabel[centroid].setBackground(cc);
+            afterImgLabel.repaint();
+        } else {
+            System.out.println("Exited out of Color Chooser without setting a new colour");
         }
-        afterImgLabel.setIcon(new ImageIcon((new ImageIcon(bi)).getImage().getScaledInstance(400, (int)(400*ratio), Image.SCALE_SMOOTH)));
-        colorLabel[centroid].setBackground(cc);
-        afterImgLabel.repaint();
     }
 
     private void afterPanelSetUp() {
@@ -157,7 +200,7 @@ class Window extends JFrame {
 
         afterImgLabel = new JLabel();
         afterImgLabel.setPreferredSize(new Dimension(400, (int) (400 * ratio)));
-        afterImgLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+        //afterImgLabel.setBorder(BorderFactory.createLineBorder(Color.BLACK));
         afterPanel.add(afterImgLabel);
 
         colorLabel = new JLabel[k];
@@ -165,7 +208,7 @@ class Window extends JFrame {
             colorLabel[a] = null;
             System.out.println("a = " + a);
             colorLabel[a] = new JLabel("   ");
-            colorLabel[a].setBorder(BorderFactory.createLineBorder(Color.GREEN));
+            //colorLabel[a].setBorder(BorderFactory.createLineBorder(Color.GREEN));
             colorLabel[a].setOpaque(true);
             colorLabel[a].setPreferredSize(new Dimension(50, 50));
 
@@ -192,7 +235,27 @@ class Window extends JFrame {
         });
         afterPanel.add(revert);
 
-        afterPanel.setBorder(BorderFactory.createLineBorder(Color.ORANGE));
+        JFileChooser fc = new JFileChooser();
+        fc.setPreferredSize(new Dimension(600,750));
+        JButton save = new JButton("Save");
+        save.addActionListener((ActionEvent evt) -> {
+            int returnVal = fc.showSaveDialog(this);
+            if(returnVal == JFileChooser.APPROVE_OPTION) {
+                File file = fc.getSelectedFile();
+                System.out.println("Saving " + file.getName() + " in " + fc.getCurrentDirectory());
+                try {
+                    ImageIO.write(bi, "jpg", new File(fc.getCurrentDirectory() + "/" + file.getName()));
+                } catch(IOException ioe) {
+                    System.out.println("Exception occurred while trying to write file");
+                }
+            } else {
+                System.out.println("Save file abandoned");
+            }
+        });
+
+        afterPanel.add(save);
+
+        //afterPanel.setBorder(BorderFactory.createLineBorder(Color.ORANGE));
         afterPanel.setPreferredSize(new Dimension(425, 1000));
         afterPanel.repaint();
         this.repaint();
