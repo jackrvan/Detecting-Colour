@@ -53,7 +53,7 @@ class KMeans {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        //startCentroidsRandom();
+        /*startCentroidsRandom();*/
         startCentroidsDivided();
 
         int len = rgbs.length;
