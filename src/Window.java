@@ -208,7 +208,7 @@ class Window extends JFrame {
             colorLabel[a] = null;
             System.out.println("a = " + a);
             colorLabel[a] = new JLabel("   ");
-            //colorLabel[a].setBorder(BorderFactory.createLineBorder(Color.GREEN));
+            colorLabel[a].setBorder(BorderFactory.createLineBorder(Color.BLACK));
             colorLabel[a].setOpaque(true);
             colorLabel[a].setPreferredSize(new Dimension(50, 50));
 
